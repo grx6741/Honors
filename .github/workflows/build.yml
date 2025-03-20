@@ -32,4 +32,4 @@ jobs:
           emmake make debug
 
       - name: Run tests with native release build
-        run: python3 test_word_count.py ./bin/native/debug/word_count
+        run: python3 test.py ./bin/native/debug/word_count
