@@ -18,6 +18,7 @@ MODULE_DIR := $(MODULE_NAME)
 BUILD_DIR := build/$(PLATFORM)
 LIB_DIR := lib/$(PLATFORM)
 BIN_DIR := bin/$(PLATFORM)
+DEPLOY_DIR := deploy
 
 BIN_DEBUG := $(BIN_DIR)/debug
 BIN_RELEASE := $(BIN_DIR)/release
@@ -62,7 +63,7 @@ define ensure_dir
 endef
 
 # Targets
-.PHONY: all clean debug release web web-debug info help
+.PHONY: all clean debug release web web-debug info help deploy deploy-debug deploy-release
 
 all: release debug
 
@@ -82,10 +83,12 @@ help:
 	@echo "  clean     - Remove all build artifacts"
 	@echo "  info      - Display build configuration"
 	@echo "  help      - Display this help message"
+	@echo "  deploy    - Deploy web build to deploy directory (web platform only)"
 	@echo ""
 	@echo "Usage with Emscripten:"
 	@echo "  emmake make        - Build for web (WebAssembly)"
 	@echo "  emmake make debug  - Build debug version for web"
+	@echo "  emmake make deploy - Build and deploy for web"
 
 ### Compile Static Libraries ###
 $(MODULE_LIB_RELEASE): $(MODULE_OBJ_RELEASE)
@@ -131,6 +134,23 @@ web-debug: $(WEB_DEBUG_ASM)
 $(WEB_DEBUG_ASM): $(MAIN_SRC) $(MODULE_SRC) $(BINDINGS_SRC)
 	$(call ensure_dir,$(BIN_DEBUG))
 	$(CXX) $(CXXFLAGS) $(DEBUG_FLAGS) $(EMSCRIPTEN_FLAGS) $^ -o $@
+
+### Deploy targets ###
+deploy: deploy-release
+
+deploy-release: $(WEB_RELEASE_ASM)
+	$(call ensure_dir,$(DEPLOY_DIR))
+	cp index.html $(DEPLOY_DIR)/
+	cp $(WEB_RELEASE_ASM) $(DEPLOY_DIR)/
+	cp $(WEB_RELEASE_WASM) $(DEPLOY_DIR)/
+	@echo "Deployed to $(DEPLOY_DIR)/"
+
+deploy-debug: $(WEB_DEBUG_ASM)
+	$(call ensure_dir,$(DEPLOY_DIR))
+	cp index.html $(DEPLOY_DIR)/
+	cp $(WEB_DEBUG_ASM) $(DEPLOY_DIR)/
+	cp $(WEB_DEBUG_WASM) $(DEPLOY_DIR)/
+	@echo "Deployed debug build to $(DEPLOY_DIR)/"
 endif
 
 # Grouped release and debug targets
@@ -139,6 +159,6 @@ debug: $(if $(filter web,$(PLATFORM)),$(WEB_DEBUG_ASM),$(NATIVE_DEBUG_EXE))
 
 # Clean
 clean:
-	rm -rf build lib bin
+	rm -rf build lib bin $(DEPLOY_DIR)
 
 .PRECIOUS: $(BUILD_DEBUG)/%.o $(BUILD_RELEASE)/%.o
