@@ -1,0 +1,34 @@
+name: CI Build & Test
+
+on: [push, pull_request]  # Runs on every push and PR
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+        with:
+          submodules: recursive  # Ensure Emscripten submodule is cloned
+
+      - name: Install dependencies
+        run: |
+          sudo apt update -y
+          sudo apt install -y make g++ python3
+
+      - name: Set up Emscripten
+        run: |
+          ./emsdk/emsdk install latest
+          ./emsdk/emsdk activate latest
+          source ./emsdk/emsdk_env.sh
+        shell: bash
+
+      - name: Build native debug
+        run: make debug
+
+      - name: Build web debug (WebAssembly)
+        run: emmake make debug
+
+      - name: Run tests with native release build
+        run: python3 test_word_count.py ./bin/native/debug/word_count
