@@ -7,29 +7,25 @@ jobs:
     steps:
       - checkout:
           submodules: true  # Ensure Emscripten submodule is cloned
-
       - run:
           name: Install dependencies
           command: |
             sudo apt update -y
             sudo apt install -y make g++ python3
-
       - run:
           name: Set up Emscripten
           command: |
+            git submodule update --init --recursive
             ./emsdk/emsdk install latest
             ./emsdk/emsdk activate latest
-
       - run:
           name: Build native debug
           command: make debug
-
       - run:
           name: Build web debug (WebAssembly)
           command: |
             source ./emsdk/emsdk_env.sh
             emmake make debug
-
       - run:
           name: Run tests with native release build
           command: python3 test.py ./bin/native/debug/word_count
